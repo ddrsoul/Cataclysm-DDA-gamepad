@@ -2363,31 +2363,35 @@ void inventory_selector::rearrange_columns( size_t client_width )
 
 void inventory_selector::prepare_layout( size_t client_width, size_t client_height )
 {
-    // This block adds categories and should go before any width evaluations
-    const bool initial = get_active_column().get_highlighted_index() == static_cast<size_t>( -1 );
-    for( inventory_column *&elem : columns ) {
-        elem->set_height( client_height );
-        elem->prepare_paging( filter );
-        elem->reset_width( columns );
+    // Используем фиксированные размеры вместо динамических
+    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
+    
+    // Этот блок добавляет категории и должен идти перед любыми вычислениями ширины
+    const bool initial = get_active_column().get_highlighted_index() == static_cast<size_t>(-1);
+    
+    for (inventory_column *&elem : columns) {
+        elem->set_height(fixed_height - get_header_height() - 2); // Высота минус заголовок и рамка
+        elem->prepare_paging(filter);
+        elem->reset_width(columns);
     }
 
-    // Handle screen overflow
-    rearrange_columns( client_width );
-    if( initial ) {
-        get_active_column().highlight( 0, scroll_direction::FORWARD );
+    // Обрабатываем переполнение экрана
+    rearrange_columns(fixed_width - 2); // Минус рамка
+    
+    if (initial) {
+        get_active_column().highlight(0, scroll_direction::FORWARD);
     }
-    // If we have a single column and it occupies more than a half of
-    // the available with -> expand it
+    
+    // Если у нас одна колонка и она занимает больше половины доступной ширины -> расширяем её
     auto visible_columns = get_visible_columns();
-    if( visible_columns.size() == 1 && are_columns_centered( client_width ) ) {
-        visible_columns.front()->set_width( client_width );
+    if (visible_columns.size() == 1 && are_columns_centered(fixed_width - 2)) {
+        visible_columns.front()->set_width(fixed_width - 2);
     }
 
     reassign_custom_invlets();
-
     refresh_active_column();
 }
-
 void inventory_selector::reassign_custom_invlets()
 {
     if( invlet_type_ == SELECTOR_INVLET_DEFAULT || invlet_type_ == SELECTOR_INVLET_NUMERIC ) {
@@ -2425,29 +2429,19 @@ void inventory_selector::reassign_custom_invlets()
 void inventory_selector::prepare_layout()
 {
     startup_timer const tp_prep =
-        std::chrono::time_point_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() );
+        std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 
-    const auto snap = []( size_t cur_dim, size_t max_dim ) {
-        return cur_dim + 2 * max_win_snap_distance >= max_dim ? max_dim : cur_dim;
-    };
+    // Фиксированные размеры в символах для 640x480 пикселей
+    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
 
-    const int nc_width = 2 * ( 1 + border );
-    const int nc_height = get_header_height() + 1 + 2 * border;
+    // Подготавливаем макет с фиксированными размерами
+    prepare_layout(fixed_width, fixed_height);
+    
+    // Создаем окно с фиксированными размерами
+    resize_window(fixed_width, fixed_height);
 
-    prepare_layout( TERMX - nc_width, TERMY - nc_height );
-
-    int const win_width =
-        _fixed_size.x < 0 ? snap( get_layout_width() + nc_width, TERMX ) : _fixed_size.x;
-    int const win_height =
-        _fixed_size.y < 0
-        ? snap( std::max<int>( get_layout_height() + nc_height, FULL_SCREEN_HEIGHT ), TERMY )
-        : _fixed_size.y;
-
-    prepare_layout( win_width - nc_width, win_height - nc_height );
-
-    resize_window( win_width, win_height );
-
-    debug_print_timer( tp_prep, "prepare_layout took" );
+    debug_print_timer(tp_prep, "prepare_layout took");
 }
 
 shared_ptr_fast<ui_adaptor> inventory_selector::create_or_get_ui_adaptor()
@@ -2491,9 +2485,8 @@ size_t inventory_selector::get_layout_height() const
 
 size_t inventory_selector::get_header_height() const
 {
-    return display_stats || !hint.empty()
-           ? std::max<size_t>( 3, 2 + std::count( hint.begin(), hint.end(), '\n' ) )
-           : 1;
+    // Фиксированная высота заголовка для окна 80x30
+    return 3; // Заголовок + подсказка + разделитель
 }
 
 size_t inventory_selector::get_header_min_width() const
@@ -2514,16 +2507,8 @@ size_t inventory_selector::get_header_min_width() const
 
 size_t inventory_selector::get_footer_min_width() const
 {
-    size_t result = 0;
-    navigation_mode m = mode;
-
-    do {
-        result = std::max( static_cast<size_t>( utf8_width( get_footer( m ).first, true ) ) + 2 + 4,
-                           result );
-        m = get_navigation_data( m ).next_mode;
-    } while( m != mode );
-
-    return result;
+    // Фиксированная минимальная ширина подвала для окна шириной 80 символов
+    return 60; // Оставляем место по бокам для рамки
 }
 
 void inventory_selector::draw_header( const catacurses::window &w ) const
@@ -2651,18 +2636,38 @@ std::vector<std::string> inventory_selector::get_stats() const
 
 void inventory_selector::resize_window( int width, int height )
 {
-    point origin = _fixed_origin;
-    if( origin.x < 0 || origin.y < 0 ) {
-        origin = { ( TERMX - width ) / 2, ( TERMY - height ) / 2 };
+    // Фиксированные размеры для инвентаря
+    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
+    
+    // Отступ слева (2 символа от левого края)
+    constexpr int left_margin = 2;
+    
+    // Вертикальное центрирование
+    const int vertical_center = (TERMY - fixed_height) / 2;
+    const int pos_y = vertical_center > 0 ? vertical_center : 0;
+    
+    // Используем фиксированные размеры, игнорируя переданные параметры
+    point origin(left_margin, pos_y);
+    
+    // Создаем окно с фиксированными размерами
+    w_inv = catacurses::newwin(fixed_height, fixed_width, origin);
+    
+    // Обновляем окно строкового ввода (если есть)
+    if (spopup) {
+        spopup->window(w_inv, point(4, getmaxy(w_inv) - 1), 
+                       (getmaxx(w_inv) / 2) - 4);
     }
-    w_inv = catacurses::newwin( height, width, origin );
-    if( spopup ) {
-        spopup->window( w_inv, point( 4, getmaxy( w_inv ) - 1 ), ( getmaxx( w_inv ) / 2 ) - 4 );
-    }
+    
+    // Обновляем позицию UI адаптера
     shared_ptr_fast<ui_adaptor> current_ui = ui.lock();
-    if( current_ui ) {
-        current_ui->position_from_window( w_inv );
+    if (current_ui) {
+        current_ui->position_from_window(w_inv);
     }
+    
+    // Сбрасываем внутренние переменные для динамического размера
+    _fixed_size = point(-1, -1);  // Запрещаем динамическое изменение
+    _fixed_origin = point(-1, -1);
 }
 
 void inventory_selector::refresh_window()
@@ -4434,9 +4439,14 @@ void inventory_examiner::draw_item_details( const item_location &sitem )
 
 void inventory_examiner::force_max_window_size()
 {
+    // Фиксированные размеры для окна осмотра
     constexpr int border_width = 1;
-    _fixed_size = { TERMX / 3 + 2 * border_width, TERMY };
-    _fixed_origin = point::zero;
+    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
+    
+    // Располагаем слева (отступ 2 символа)
+    _fixed_size = point(fixed_width, fixed_height);
+    _fixed_origin = point(2, (TERMY - fixed_height) / 2);
 }
 
 int inventory_examiner::execute()
@@ -4665,9 +4675,15 @@ void trade_selector::on_toggle()
 
 void trade_selector::resize( point const &size, point const &origin )
 {
-    _fixed_size = size;
-    _fixed_origin = origin;
-    if( _ui ) {
+    // Фиксированные размеры для торговли
+    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
+    
+    // Используем фиксированные размеры вместо переданных
+    _fixed_size = point(fixed_width, fixed_height);
+    _fixed_origin = point(2, (TERMY - fixed_height) / 2); // Слева с вертикальным центрированием
+    
+    if (_ui) {
         _ui->mark_resize();
     }
 }
