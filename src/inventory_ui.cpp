@@ -2361,9 +2361,9 @@ void inventory_selector::rearrange_columns( size_t client_width )
     }
 }
 
-void inventory_selector::prepare_layout( size_t client_width, size_t client_height )
+void inventory_selector::prepare_layout( size_t /* client_width */, size_t /* client_height */ )
 {
-    // Используем фиксированные размеры вместо динамических
+    // Фиксированные размеры в символах для 640x480 пикселей
     constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
@@ -2634,7 +2634,7 @@ std::vector<std::string> inventory_selector::get_stats() const
     return std::vector<std::string>( lines.begin(), lines.end() );
 }
 
-void inventory_selector::resize_window( int width, int height )
+void inventory_selector::resize_window( int /* width */, int /* height */ )
 {
     // Фиксированные размеры для инвентаря
     constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
@@ -4440,7 +4440,6 @@ void inventory_examiner::draw_item_details( const item_location &sitem )
 void inventory_examiner::force_max_window_size()
 {
     // Фиксированные размеры для окна осмотра
-    constexpr int border_width = 1;
     constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
@@ -4459,19 +4458,18 @@ int inventory_examiner::execute()
 
     ui_adaptor ui_examine;
 
-    ui_examine.on_screen_resize( [&]( ui_adaptor & ui_examine ) {
-        force_max_window_size();
-        ui->mark_resize();
-
-        int const width = TERMX - _fixed_size.x;
-        int const height = TERMY;
-        point const start_position = point( TERMX - width, 0 );
-
-        scroll_item_info_lines = TERMY / 2;
-
-        w_examine = catacurses::newwin( height, width, start_position );
-        ui_examine.position_from_window( w_examine );
-    } );
+ui_examine.on_screen_resize( [&]( ui_adaptor & ui_examine ) {
+    // Фиксированные размеры для окна осмотра
+    constexpr int fixed_width = 80;
+    constexpr int fixed_height = 30;
+    
+    // Размещаем справа от основного окна инвентаря
+    const int start_x = TERMX - fixed_width;
+    const int start_y = (TERMY - fixed_height) / 2;
+    
+    w_examine = catacurses::newwin(fixed_height, fixed_width, point(start_x, start_y));
+    ui_examine.position_from_window(w_examine);
+} );
     ui_examine.mark_resize();
 
     ui_examine.on_redraw( [&]( const ui_adaptor & ) {
@@ -4673,7 +4671,7 @@ void trade_selector::on_toggle()
     _parent->recalc_values_cpane();
 }
 
-void trade_selector::resize( point const &size, point const &origin )
+void trade_selector::resize( point const & /* size */, point const & /* origin */ )
 {
     // Фиксированные размеры для торговли
     constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
