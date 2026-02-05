@@ -2018,40 +2018,54 @@ void advanced_inventory::display()
     if( !ui ) {
         init();
         ui = std::make_unique<ui_adaptor>();
-        ui->on_screen_resize( [&]( ui_adaptor & ui ) {
-            constexpr int min_w_height = 10;
-            const int min_w_width = FULL_SCREEN_WIDTH;
-            const int max_w_width = get_option<bool>( "AIM_WIDTH" ) ? TERMX : std::max( 120,
-                                    TERMX - 2 * ( panel_manager::get_manager().get_width_right() +
-                                                  panel_manager::get_manager().get_width_left() ) );
 
-            w_height = TERMY < min_w_height + head_height ? min_w_height : TERMY - head_height;
-            w_width = TERMX < min_w_width ? min_w_width : TERMX > max_w_width ? max_w_width :
-                      static_cast<int>( TERMX );
+ui->on_screen_resize( [&]( ui_adaptor & ui ) {
+    // Фиксированные размеры в символах для 640x480 пикселей
+    constexpr int fixed_total_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_total_height = 30;   // 480px / 16px = 30 символов
+    
+    // Вычисляем размеры панелей (учитываем мини-карту и заголовок)
+    const int pane_width = (fixed_total_width - minimap_width) / 2;
+    const int pane_height = fixed_total_height - head_height;
+    
+    w_width = fixed_total_width - minimap_width;  // Ширина без мини-карты
+    w_height = pane_height;                      // Высота панелей
+    
+    // Центрирование слева с фиксированным отступом
+    constexpr int left_margin = 2;  // Отступ 2 символа от левого края
+    colstart = left_margin;
+    
+    // Вертикальное центрирование
+    headstart = (TERMY - fixed_total_height) / 2;
+    if (headstart < 0) headstart = 0;  // Не выходить за верхний край
+    
+    // Создаем окна с фиксированными размерами
+    head = catacurses::newwin(head_height, w_width, 
+                              point(colstart, headstart));
+    
+    // Мини-карта справа
+    mm_border = catacurses::newwin(minimap_height + 2, minimap_width + 2,
+                                   point(colstart + w_width, headstart));
+    minimap = catacurses::newwin(minimap_height, minimap_width,
+                                 point(colstart + w_width + 1, headstart + 1));
+    
+    // Панели инвентаря
+    panes[left].window = catacurses::newwin(w_height, pane_width, 
+                                            point(colstart, headstart + head_height));
+    panes[right].window = catacurses::newwin(w_height, pane_width,
+                                             point(colstart + pane_width, headstart + head_height));
 
-            //(TERMY>w_height)?(TERMY-w_height)/2:0;
-            headstart = 0;
-            colstart = TERMX > w_width ? ( TERMX - w_width ) / 2 : 0;
+    // Количество строк на странице
+    linesPerPage = w_height - 2 - 5;  // 2 для границ, 5 для заголовка
 
-            head = catacurses::newwin( head_height, w_width - minimap_width, point( colstart, headstart ) );
-            mm_border = catacurses::newwin( minimap_height + 2, minimap_width + 2,
-                                            point( colstart + ( w_width - ( minimap_width + 2 ) ), headstart ) );
-            minimap = catacurses::newwin( minimap_height, minimap_width,
-                                          point( colstart + ( w_width - ( minimap_width + 1 ) ), headstart + 1 ) );
-            panes[left].window = catacurses::newwin( w_height, w_width / 2, point( colstart,
-                                 headstart + head_height ) );
-            panes[right].window = catacurses::newwin( w_height, w_width / 2, point( colstart + w_width / 2,
-                                  headstart + head_height ) );
+    if (filter_edit && spopup) {
+        spopup->window(panes[src].window, point(4, w_height - 1), pane_width - 4);
+    }
 
-            // 2 for the borders, 5 for the header stuff
-            linesPerPage = w_height - 2 - 5;
-
-            if( filter_edit && spopup ) {
-                spopup->window( panes[src].window, point( 4, w_height - 1 ), w_width / 2 - 4 );
-            }
-
-            ui.position( point( colstart, headstart ), point( w_width, head_height + w_height ) );
-        } );
+    ui.position(point(colstart, headstart), 
+                point(fixed_total_width, fixed_total_height));
+} );
+        
         ui->mark_resize();
 
         ui->on_redraw( [&]( const ui_adaptor & ) {
