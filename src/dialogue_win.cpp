@@ -31,16 +31,27 @@ dialogue_window::dialogue_window()
 
 void dialogue_window::resize( ui_adaptor &ui )
 {
-    const int win_beginy = TERMY > FULL_SCREEN_HEIGHT ? ( TERMY - FULL_SCREEN_HEIGHT ) / 4 : 0;
-    const int win_beginx = TERMX > FULL_SCREEN_WIDTH ? ( TERMX - FULL_SCREEN_WIDTH ) / 4 : 0;
-    const int maxy = win_beginy ? TERMY - 2 * win_beginy : FULL_SCREEN_HEIGHT;
-    const int maxx = win_beginx ? TERMX - 2 * win_beginx : FULL_SCREEN_WIDTH;
-    d_win = catacurses::newwin( maxy, maxx, point( win_beginx, win_beginy ) );
+    // Фиксированные размеры для 640x480 пикселей
+    constexpr int fixed_width = 80;    // 640px / 8px
+    constexpr int fixed_height = 30;   // 480px / 16px
+    
+    // Позиционирование по левому краю с небольшим отступом
+    constexpr int left_margin = 2;
+    const int vert_center = std::max( 0, ( TERMY - fixed_height ) / 2 );
+    
+    d_win = catacurses::newwin( fixed_height, fixed_width, 
+                                point( left_margin, vert_center ) );
     ui.position_from_window( d_win );
-    history_win = catacurses::newwin( maxy - 1 - RESPONSES_LINES - 2 - 1, maxx - 1, point( win_beginx,
-                                      win_beginy + 2 ) );
-    resp_win = catacurses::newwin( RESPONSES_LINES - 1, maxx / 2, point( win_beginx,
-                                   win_beginy + maxy - RESPONSES_LINES ) );
+    
+    // История диалогов: занимает пространство над ответами
+    // Высота = общая высота - заголовок (2 строки) - разделитель (1 строка) - высота ответов
+    const int history_height = fixed_height - 2 - 1 - RESPONSES_LINES;
+    history_win = catacurses::newwin( history_height, fixed_width - 2, 
+                                      point( left_margin + 1, vert_center + 2 ) );
+    
+    // Окно ответов: фиксированная высота, половина ширины
+    resp_win = catacurses::newwin( RESPONSES_LINES - 1, fixed_width / 2, 
+                                   point( left_margin, vert_center + fixed_height - RESPONSES_LINES ) );
 
     // Reset size-dependant state
     update_history_view = true;
