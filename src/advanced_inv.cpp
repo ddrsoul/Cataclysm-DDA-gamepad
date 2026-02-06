@@ -143,24 +143,26 @@ advanced_inventory::advanced_inventory()
     , src( left )
     , dest( right )
       // panes don't need initialization, they are recalculated immediately
-    , squares( { {
-    // Новые координаты (выровненные по левому краю для ширины 37)
-    { AIM_INVENTORY, point( 10, 2 ), tripoint::zero,       _( "Inventory" ),          _( "IN" ),  "I", "ITEMS_INVENTORY", AIM_INVENTORY},
-    { AIM_SOUTHWEST, point( 13, 3 ), tripoint::south_west, _( "South West" ),         _( "SW" ),  "1", "ITEMS_SW",        AIM_WEST},
-    { AIM_SOUTH,     point( 16, 3 ), tripoint::south,      _( "South" ),              _( "S" ),   "2", "ITEMS_S",         AIM_SOUTHWEST},
-    { AIM_SOUTHEAST, point( 19, 3 ), tripoint::south_east, _( "South East" ),         _( "SE" ),  "3", "ITEMS_SE",        AIM_SOUTH},
-    { AIM_WEST,      point( 13, 2 ), tripoint::west,       _( "West" ),               _( "W" ),   "4", "ITEMS_W",         AIM_NORTHWEST},
-    { AIM_CENTER,    point( 16, 2 ), tripoint::zero,       _( "Directly below you" ), _( "DN" ),  "5", "ITEMS_CE",        AIM_CENTER},
-    { AIM_EAST,      point( 19, 2 ), tripoint::east,       _( "East" ),               _( "E" ),   "6", "ITEMS_E",         AIM_SOUTHEAST},
-    { AIM_NORTHWEST, point( 13, 1 ), tripoint::north_west, _( "North West" ),         _( "NW" ),  "7", "ITEMS_NW",        AIM_NORTH},
-    { AIM_NORTH,     point( 16, 1 ), tripoint::north,      _( "North" ),              _( "N" ),   "8", "ITEMS_N",         AIM_NORTHEAST},
-    { AIM_NORTHEAST, point( 19, 1 ), tripoint::north_east, _( "North East" ),         _( "NE" ),  "9", "ITEMS_NE",        AIM_EAST},
-    { AIM_DRAGGED,   point( 7, 3 ),  tripoint::zero,       _( "Grabbed Vehicle" ),    _( "GR" ),  "D", "ITEMS_DRAGGED_CONTAINER", AIM_DRAGGED},
-    { AIM_ALL,       point( 10, 3 ), tripoint::zero,       _( "Surrounding area" ),   _( "AL" ),  "A", "ITEMS_AROUND",    AIM_ALL},
-    { AIM_CONTAINER, point( 10, 1 ), tripoint::zero,       _( "Container" ),          _( "CN" ),  "C", "ITEMS_CONTAINER", AIM_CONTAINER},
-    { AIM_PARENT,    point( 7, 1 ),  tripoint::zero,       "",                        "",         "X", "ITEMS_PARENT",    AIM_PARENT},
-    { AIM_WORN,      point( 7, 2 ),  tripoint::zero,       _( "Worn Items" ),         _( "WR" ),  "W", "ITEMS_WORN",      AIM_WORN}
-    } } )
+    , squares( {
+    {
+        //               pos in window
+        { AIM_INVENTORY, point( 25, 2 ), tripoint::zero,       _( "Inventory" ),          _( "IN" ),  "I", "ITEMS_INVENTORY", AIM_INVENTORY},
+        { AIM_SOUTHWEST, point( 30, 3 ), tripoint::south_west, _( "South West" ),         _( "SW" ),  "1", "ITEMS_SW",        AIM_WEST},
+        { AIM_SOUTH,     point( 33, 3 ), tripoint::south,      _( "South" ),              _( "S" ),   "2", "ITEMS_S",         AIM_SOUTHWEST},
+        { AIM_SOUTHEAST, point( 36, 3 ), tripoint::south_east, _( "South East" ),         _( "SE" ),  "3", "ITEMS_SE",        AIM_SOUTH},
+        { AIM_WEST,      point( 30, 2 ), tripoint::west,       _( "West" ),               _( "W" ),   "4", "ITEMS_W",         AIM_NORTHWEST},
+        { AIM_CENTER,    point( 33, 2 ), tripoint::zero,       _( "Directly below you" ), _( "DN" ),  "5", "ITEMS_CE",        AIM_CENTER},
+        { AIM_EAST,      point( 36, 2 ), tripoint::east,       _( "East" ),               _( "E" ),   "6", "ITEMS_E",         AIM_SOUTHEAST},
+        { AIM_NORTHWEST, point( 30, 1 ), tripoint::north_west, _( "North West" ),         _( "NW" ),  "7", "ITEMS_NW",        AIM_NORTH},
+        { AIM_NORTH,     point( 33, 1 ), tripoint::north,      _( "North" ),              _( "N" ),   "8", "ITEMS_N",         AIM_NORTHEAST},
+        { AIM_NORTHEAST, point( 36, 1 ), tripoint::north_east, _( "North East" ),         _( "NE" ),  "9", "ITEMS_NE",        AIM_EAST},
+        { AIM_DRAGGED,   point( 22, 3 ), tripoint::zero,       _( "Grabbed Vehicle" ),    _( "GR" ),  "D", "ITEMS_DRAGGED_CONTAINER", AIM_DRAGGED},
+        { AIM_ALL,       point( 25, 3 ), tripoint::zero,       _( "Surrounding area" ),   _( "AL" ),  "A", "ITEMS_AROUND",    AIM_ALL},
+        { AIM_CONTAINER, point( 25, 1 ), tripoint::zero,       _( "Container" ),          _( "CN" ),  "C", "ITEMS_CONTAINER", AIM_CONTAINER},
+        { AIM_PARENT,    point( 22, 1 ), tripoint::zero,       "",                        "",         "X", "ITEMS_PARENT",    AIM_PARENT},
+        { AIM_WORN,      point( 22, 2 ), tripoint::zero,       _( "Worn Items" ),         _( "WR" ),  "W", "ITEMS_WORN",      AIM_WORN}
+    }
+} )
 {
     save_state = &uistate.transfer_save;
 }
@@ -694,7 +696,7 @@ int advanced_inventory::print_header( advanced_inventory_pane &pane, aim_locatio
     const catacurses::window &window = pane.window;
     int area = pane.get_area();
     int wwidth = getmaxx( window );
-    int ofs = 2;
+    int ofs = wwidth - 25 - 2 - 14;
     int min_x = wwidth;
     for( int i = 0; i < NUM_AIM_LOCATIONS; ++i ) {
         int data_location = screen_relative_location( static_cast<aim_location>( i ) );
