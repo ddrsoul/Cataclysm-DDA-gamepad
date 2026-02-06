@@ -32,7 +32,7 @@ dialogue_window::dialogue_window()
 void dialogue_window::resize( ui_adaptor &ui )
 {
     // Фиксированные размеры для 640x480 пикселей
-    constexpr int fixed_width = 80;    // 640px / 8px
+    constexpr int fixed_width = 76;    // 640px / 8px
     constexpr int fixed_height = 30;   // 480px / 16px
     
     // Позиционирование по левому краю с небольшим отступом
