@@ -3678,9 +3678,8 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
         }
 
         scrollbar()
-        int iOffsetY = std::max(0, (TERMY - total_height) / 2)
         .offset_x( 0 )
-        .offset_y( iOffsetY + iTooltipHeight + 2 + iWorldOffset )
+        .offset_y( (std::max(0, (TERMY - total_height) / 2)) + iTooltipHeight + 2 + iWorldOffset )
         .content_size( static_cast<int>( visible_items.size() ) )
         .viewport_pos( iStartPos )
         .viewport_size( iContentHeight )
