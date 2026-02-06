@@ -65,7 +65,7 @@ void query_popup_impl::draw_controls()
     mouse_selected_option = -1;
 
     // Центрируем контент внутри окна
-    float content_width = ImGui::GetWindowContentRegionWidth();
+    float content_width = ImGui::GetContentRegionAvail().x;
     float text_start_x = (content_width - msg_width) / 2.0f;
     if (text_start_x > 0) {
         ImGui::SetCursorPosX(text_start_x);
