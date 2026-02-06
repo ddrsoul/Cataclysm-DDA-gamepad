@@ -253,7 +253,7 @@ void diary::show_diary_ui( diary *c_diary )
         const point &max = beg_and_max.second;
 
         w_pages = catacurses::newwin( max.y + 5, max.x * 3 / 10 + 1, 
-                                     point( left_margin, beg.y - 2 ) );
+                                     point( 2, beg.y - 2 ) );
 
         ui.position_from_window( w_pages );
     } );
@@ -276,7 +276,7 @@ void diary::show_diary_ui( diary *c_diary )
         const point &max = beg_and_max.second;
 
         w_desc = catacurses::newwin( 4, max.x * 3 / 10 + max.x + 10, 
-                                     point( left_margin, beg.y - 6 ) );
+                                     point( 2, beg.y - 6 ) );
 
         ui.position_from_window( w_desc );
     } );
@@ -308,7 +308,7 @@ void diary::show_diary_ui( diary *c_diary )
         int lines = std::clamp( max.y / 2 - 4, 3, 7 );
 
         w_info = catacurses::newwin( lines, max.x + 9, 
-                                     point( left_margin, beg.y + max.y + 3 + ( max.y > 12 ? 1 : 0 ) ) );
+                                     point( 2, beg.y + max.y + 3 + ( max.y > 12 ? 1 : 0 ) ) );
 
         ui.position_from_window( w_info );
     } );
