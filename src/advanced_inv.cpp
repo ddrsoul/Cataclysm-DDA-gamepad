@@ -161,7 +161,7 @@ advanced_inventory::advanced_inventory()
     { AIM_CONTAINER, point( 10, 1 ), tripoint::zero,       _( "Container" ),          _( "CN" ),  "C", "ITEMS_CONTAINER", AIM_CONTAINER},
     { AIM_PARENT,    point( 7, 1 ),  tripoint::zero,       "",                        "",         "X", "ITEMS_PARENT",    AIM_PARENT},
     { AIM_WORN,      point( 7, 2 ),  tripoint::zero,       _( "Worn Items" ),         _( "WR" ),  "W", "ITEMS_WORN",      AIM_WORN}
-} );
+} )
 {
     save_state = &uistate.transfer_save;
 }
