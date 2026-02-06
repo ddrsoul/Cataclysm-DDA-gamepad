@@ -3424,7 +3424,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
         return p.id_ == "world_default";
     } ) - pages_.begin();
 
-    // temporary alias so the code below does not need to be changed
+    // временные псевдонимы, чтобы код ниже не нужно было менять
     options_container &OPTIONS = options;
     options_container &ACTIVE_WORLD_OPTIONS = world_options.has_value() ?
             *world_options.value() :
@@ -3449,9 +3449,9 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
     int iStartPos = 0;
 
     std::unordered_map<std::string, bool> groups_state;
-    groups_state.emplace( "", true ); // Non-existent group
+    groups_state.emplace( "", true ); // Несуществующая группа
     for( const Group &g : groups_ ) {
-        // Start collapsed
+        // Начинаем свернутыми
         groups_state.emplace( g.id_, false );
     }
 
@@ -3466,16 +3466,20 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
     }
     ctxt.register_action( "CONFIRM" );
     ctxt.register_action( "HELP_KEYBINDINGS" );
-    // for mouse selection
+    // для выбора мышью
     ctxt.register_action( "SELECT" );
     ctxt.register_action( "MOUSE_MOVE" );
     ctxt.register_action( "SCROLL_UP" );
     ctxt.register_action( "SCROLL_DOWN" );
 
     const int iWorldOffset = world_options_only ? 2 : 0;
-    int iMinScreenWidth = 0;
-    const int iTooltipHeight = 7;
-    int iContentHeight = 0;
+    int iTooltipHeight = 7;
+    
+    // ФИКСИРОВАННЫЕ РАЗМЕРЫ ОКНА: 80 символов в ширину, 30 в высоту
+    const int FIXED_WINDOW_WIDTH = 80;
+    const int FIXED_WINDOW_HEIGHT = 30;
+    
+    int iContentHeight = FIXED_WINDOW_HEIGHT;
     bool recalc_startpos = false;
 
     catacurses::window w_options_border;
@@ -3502,18 +3506,26 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             }
         }
 
-        iMinScreenWidth = std::max( FULL_SCREEN_WIDTH, TERMX / 2 );
-        const int iOffsetX = TERMX > FULL_SCREEN_WIDTH ? ( TERMX - iMinScreenWidth ) / 2 : 0;
-        iContentHeight = TERMY - 3 - iTooltipHeight - iWorldOffset;
+        // ИСПОЛЬЗУЕМ ФИКСИРОВАННЫЕ РАЗМЕРЫ ВМЕСТО АДАПТИВНЫХ
+        int win_width = FIXED_WINDOW_WIDTH;
+        int win_height = FIXED_WINDOW_HEIGHT;
+        
+        // Общая высота всех элементов
+        int total_height = win_height + iTooltipHeight + 3 + iWorldOffset;
+        
+        // Позиционируем от левого края (x=0)
+        int iOffsetX = 0;
+        // Центрируем по вертикали
+        int iOffsetY = std::max(0, (TERMY - total_height) / 2);
 
-        w_options_border  = catacurses::newwin( TERMY, iMinScreenWidth,
-                                                point( iOffsetX, 0 ) );
-        w_options_tooltip = catacurses::newwin( iTooltipHeight, iMinScreenWidth - 2,
-                                                point( 1 + iOffsetX, 1 + iWorldOffset ) );
-        w_options_header  = catacurses::newwin( 1, iMinScreenWidth - 2,
-                                                point( 1 + iOffsetX, 1 + iTooltipHeight + iWorldOffset ) );
-        w_options         = catacurses::newwin( iContentHeight, iMinScreenWidth - 2,
-                                                point( 1 + iOffsetX, iTooltipHeight + 2 + iWorldOffset ) );
+        w_options_border  = catacurses::newwin( total_height, win_width,
+                                                point( iOffsetX, iOffsetY ) );
+        w_options_tooltip = catacurses::newwin( iTooltipHeight, win_width - 2,
+                                                point( 1 + iOffsetX, iOffsetY + 1 + iWorldOffset ) );
+        w_options_header  = catacurses::newwin( 1, win_width - 2,
+                                                point( 1 + iOffsetX, iOffsetY + 1 + iTooltipHeight + iWorldOffset ) );
+        w_options         = catacurses::newwin( iContentHeight, win_width - 2,
+                                                point( 1 + iOffsetX, iOffsetY + iTooltipHeight + 2 + iWorldOffset ) );
 
         ui.position_from_window( w_options_border );
     };
@@ -3549,7 +3561,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
         const Page &page = pages_[iCurrentPage];
         const std::vector<PageItem> &page_items = page.items_;
 
-        // Cache visible entries
+        // Кэшируем видимые записи
         std::vector<int> visible_items;
         visible_items.reserve( page_items.size() );
         int curr_line_visible = 0;
@@ -3575,7 +3587,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             }
         }
 
-        // Format name & value strings for given entry
+        // Форматируем строки имени и значения для данной записи
         const auto fmt_name_value = [&]( const PageItem & it, bool is_selected )
         -> std::pair<string_col, string_col> {
             const char *IN_GROUP_PREFIX = ": ";
@@ -3618,7 +3630,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             }
         };
 
-        // Draw separation lines
+        // Рисуем разделительные линии
         wattron( w_options, BORDER_COLOR );
         for( const int &x : vert_lines ) {
             mvwvline( w_options, point( x, 0 ), LINE_XOXO, iContentHeight );
@@ -3626,24 +3638,24 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
         wattroff( w_options, BORDER_COLOR );
 
         if( recalc_startpos ) {
-            // Update scroll position
+            // Обновляем позицию прокрутки
             calcStartPos( iStartPos, curr_line_visible, iContentHeight,
                           static_cast<int>( visible_items.size() ) );
         }
 
-        // where the column with the names starts
+        // где начинается столбец с именами
         const size_t name_col = 5;
-        // where the column with the values starts
+        // где начинается столбец со значениями
         const size_t value_col = 62;
-        // 2 for the space between name and value column, 3 for the ">> "
+        // 2 для пробела между столбцами имени и значения, 3 для ">> "
         const size_t name_width = value_col - name_col - 2 - 3;
-        const size_t value_width = getmaxx( w_options ) - value_col;
-        //Draw options
+        const size_t value_width = FIXED_WINDOW_WIDTH - value_col - 4; // -4 для границ и отступов
+        // Рисуем опции
         for( int i = iStartPos;
              i < iStartPos + ( iContentHeight > static_cast<int>( visible_items.size() ) ?
                                static_cast<int>( visible_items.size() ) : iContentHeight ); i++ ) {
 
-            int line_pos = i - iStartPos; // Current line position in window.
+            int line_pos = i - iStartPos; // Текущая позиция строки в окне.
 
             mvwprintz( w_options, point( 1, line_pos ), c_white, "%d", visible_items[i] + 1 );
 
@@ -3667,7 +3679,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
 
         scrollbar()
         .offset_x( 0 )
-        .offset_y( iTooltipHeight + 2 + iWorldOffset )
+        .offset_y( iOffsetY + iTooltipHeight + 2 + iWorldOffset )
         .content_size( static_cast<int>( visible_items.size() ) )
         .viewport_pos( iStartPos )
         .viewport_size( iContentHeight )
@@ -3675,7 +3687,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
 
         wnoutrefresh( w_options_border );
 
-        //Draw Tabs
+        // Рисуем вкладки
         int tab_x = 0;
         if( !world_options_only ) {
             mvwprintz( w_options_header, point( 7, 0 ), c_white, "" );
@@ -3702,7 +3714,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
 
         const PageItem &curr_item = page_items[iCurrentLine];
         std::string tooltip = curr_item.fmt_tooltip( curr_item.group, cOPTIONS );
-        fold_and_print( w_options_tooltip, point::zero, iMinScreenWidth - 2, c_white, tooltip );
+        fold_and_print( w_options_tooltip, point::zero, FIXED_WINDOW_WIDTH - 4, c_white, tooltip );
 
         if( ingame && iCurrentPage == iWorldOptPage ) {
             mvwprintz( w_options_tooltip, point( 3, 5 ), c_light_red, "%s", _( "Note: " ) );
@@ -3797,7 +3809,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             sel_worldgen_tab = 1;
             std::optional<point> coord = ctxt.get_coordinates_text( w_options_border );
             if( world_options_only && with_tabs && coord.has_value() ) {
-                // worldgen tabs
+                // вкладки генерации мира
                 found_opt = run_for_point_in<size_t, point>( worldgen_tab_map, *coord,
                 [&sel_worldgen_tab]( const std::pair<size_t, inclusive_rectangle<point>> &p ) {
                     sel_worldgen_tab = p.first;
@@ -3808,7 +3820,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             }
             coord = ctxt.get_coordinates_text( w_options_header );
             if( !found_opt && coord.has_value() ) {
-                // option category tabs
+                // вкладки категорий опций
                 bool new_val = false;
                 const int psize = pages_.size();
                 found_opt = run_for_point_in<int, point>( opt_tab_map, *coord,
@@ -3827,7 +3839,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
             }
             coord = ctxt.get_coordinates_text( w_options );
             if( !found_opt && coord.has_value() ) {
-                // option lines
+                // строки опций
                 const int psize = page_items.size();
                 found_opt = run_for_point_in<int, point>( opt_line_map, *coord,
                 [&iCurrentLine, &psize]( const std::pair<int, inclusive_rectangle<point>> &p ) {
@@ -3913,7 +3925,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
                     break;
                 }
                 case ItemType::BlankLine: {
-                    // Should never happen
+                    // Этого никогда не должно произойти
                     break;
                 }
                 default:
@@ -3924,7 +3936,7 @@ std::string options_manager::show( bool ingame, const bool world_options_only, b
         }
     }
 
-    //Look for changes
+    // Ищем изменения
     bool options_changed = false;
     bool world_options_changed = false;
     bool lang_changed = false;
