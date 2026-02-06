@@ -22,7 +22,6 @@ class query_popup_impl : public cataimgui::window
         query_popup *parent;
         short last_keyboard_selected_option;
         float window_width;  // Добавлено: храним ширину окна
-        float window_height; // Добавлено: храним высоту окна
 
         std::vector<std::vector<std::string>> fold_query(
                                                const std::string &category,
@@ -33,7 +32,7 @@ class query_popup_impl : public cataimgui::window
         short keyboard_selected_option;
 
         explicit query_popup_impl( query_popup *parent ) : cataimgui::window( "QUERY_POPUP",
-                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize ),
+                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize ),
             default_text_color( c_white ) {
             msg_width = 400;
             this->parent = parent;
@@ -41,7 +40,6 @@ class query_popup_impl : public cataimgui::window
             last_keyboard_selected_option = -1;
             mouse_selected_option = -1;
             window_width = 600.0f;  // Фиксированная ширина окна
-            window_height = 480.0f; // Фиксированная высота окна
         }
 
         void on_resized() override;
@@ -55,7 +53,8 @@ class query_popup_impl : public cataimgui::window
             // Центрируем окно в области 600 пикселей от левого края
             // Окно шириной window_width будет отцентрировано в диапазоне [0, 600]
             float x_pos = (600.0f - window_width) / 2.0f;
-            return { x_pos, parent->ontop ? 0 : -1.f, window_width, window_height };
+            // Высота -1.f означает авто-размер
+            return { x_pos, parent->ontop ? 0 : -1.f, window_width, -1.f };
         }
 };
 
@@ -107,8 +106,8 @@ void query_popup_impl::on_resized()
     // Максимальная ширина контента внутри окна
     size_t max_content_width = window_width - frame_padding * 2;
 
-    // Fold message text
-    parent->folded_msg = foldstring( parent->text, max_content_width / 8 ); // Приблизительный расчет
+    // Fold message text - используем правильный расчет символов
+    parent->folded_msg = foldstring( parent->text, max_content_width / 8 ); // Примерный расчет
 
     // Fold query buttons
     const auto &folded_query = fold_query( parent->category, parent->pref_kbd_mode,
@@ -121,11 +120,12 @@ void query_popup_impl::on_resized()
         msg_width = std::max( msg_width,
                               get_text_width( remove_color_tags( line ) ) );
     }
+    
+    // Рассчитываем ширину с учетом кнопок
     auto btn_padding = [&frame_padding, &item_padding]( size_t num_buttons ) {
         return ( frame_padding * ( num_buttons - 1 ) ) + ( item_padding * ( num_buttons - 1 ) );
     };
     
-    // Calculate width with query buttons
     for( const auto &line : folded_query ) {
         if( !line.empty() ) {
             int button_width = 0;
@@ -140,7 +140,7 @@ void query_popup_impl::on_resized()
     // Ограничиваем ширину контента шириной окна
     msg_width = std::min( msg_width, static_cast<size_t>(max_content_width) );
 
-    // Calculate height with query buttons & button positions
+    // Calculate button positions
     parent->buttons.clear();
     size_t line_idx = 0;
     if( !folded_query.empty() ) {
