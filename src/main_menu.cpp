@@ -314,7 +314,7 @@ void main_menu::print_menu( const catacurses::window &w_open, int iSel, const po
                   vdaytip ) );
 
     int iLine = 0;
-    const int iOffsetX = ( window_width - FULL_SCREEN_WIDTH ) / 2;
+    const int iOffsetX = 2; // Фиксированный отступ от левого края
 
     if( get_option<bool>( "SEASONAL_TITLE" ) ) {
         switch( current_holiday ) {
@@ -342,12 +342,14 @@ void main_menu::print_menu( const catacurses::window &w_open, int iSel, const po
             print_colored_text( w_open, point( iOffsetX, iLine++ ), cur_color, base_color, i_title );
         }
     } else {
-        center_print( w_open, iLine++, c_light_cyan, mmenu_title[0] );
+        // Заголовок с фиксированным отступом от левого края
+        mvwprintz( w_open, point( iOffsetX, iLine++ ), c_light_cyan, mmenu_title[0] );
     }
 
     iLine++;
-    center_print( w_open, iLine, c_light_blue, string_format( _( "Version: %s" ),
-                  getVersionString() ) );
+    // Версия с фиксированным отступом
+    mvwprintz( w_open, point( iOffsetX, iLine ), c_light_blue, string_format( _( "Version: %s" ),
+               getVersionString() ) );
 
     int menu_length = 0;
     for( size_t i = 0; i < vMenuItems.size(); ++i ) {
@@ -402,24 +404,18 @@ void main_menu::init_windows()
         return;
     }
 
-    // main window should also expand to use available display space.
-    // expanding to evenly use up half of extra space, for now.
-    extra_w = ( ( TERMX - FULL_SCREEN_WIDTH ) / 2 ) - 1;
-    int extra_h = ( ( TERMY - FULL_SCREEN_HEIGHT ) / 2 ) - 1;
-    extra_w = ( extra_w > 0 ? extra_w : 0 );
-    extra_h = ( extra_h > 0 ? extra_h : 0 );
-    const int total_w = FULL_SCREEN_WIDTH + extra_w;
-    const int total_h = FULL_SCREEN_HEIGHT + extra_h;
+    // Фиксированные размеры для 640x480 пикселей
+    constexpr int fixed_total_width = 80;    // 640px / 8px
+    constexpr int fixed_total_height = 30;   // 480px / 16px
+    
+    // Позиционирование по левому краю с небольшим отступом
+    constexpr int left_margin = 2;
+    const point p0( left_margin, ( TERMY - fixed_total_height ) / 2 );
 
-    // position of window within main display
-    const point p0( ( TERMX - total_w ) / 2, ( TERMY - total_h ) / 2 );
+    w_open = catacurses::newwin( fixed_total_height, fixed_total_width, p0 );
 
-    w_open = catacurses::newwin( total_h, total_w, p0 );
-
-    menu_offset.y = total_h - 3;
-    // note: if iMenuOffset is changed,
-    // please update MOTD and credits to indicate how long they can be.
-
+    menu_offset = point( 2, fixed_total_height - 3 ); // Отступ слева 2 символа
+    
     LAST_TERM = point( TERMX, TERMY );
 }
 
@@ -535,20 +531,24 @@ void main_menu::init_strings()
 
 void main_menu::display_text( const std::string &text, const std::string &title, int &selected )
 {
-    const int w_open_height = getmaxy( w_open );
-    const int b_height = FULL_SCREEN_HEIGHT - clamp( ( FULL_SCREEN_HEIGHT - w_open_height ) + 4, 0, 4 );
-    const int vert_off = clamp( ( w_open_height - FULL_SCREEN_HEIGHT ) / 2, getbegy( w_open ), TERMY );
+    // Используем фиксированные размеры для всплывающих окон
+    constexpr int fixed_width = 80;
+    constexpr int fixed_height = 30;
+    
+    // Позиционируем окно с фиксированным отступом от левого края
+    constexpr int left_margin = 2;
+    const int vert_off = ( TERMY - fixed_height ) / 2;
 
-    catacurses::window w_border = catacurses::newwin( b_height, FULL_SCREEN_WIDTH,
-                                  point( clamp( ( TERMX - FULL_SCREEN_WIDTH ) / 2, 0, TERMX ), vert_off ) );
+    catacurses::window w_border = catacurses::newwin( fixed_height, fixed_width,
+                                  point( left_margin, vert_off ) );
 
-    catacurses::window w_text = catacurses::newwin( b_height - 2, FULL_SCREEN_WIDTH - 2,
-                                point( 1 + clamp( ( TERMX - FULL_SCREEN_WIDTH ) / 2, 0, TERMX ), 1 + vert_off ) );
+    catacurses::window w_text = catacurses::newwin( fixed_height - 2, fixed_width - 2,
+                                point( left_margin + 1, vert_off + 1 ) );
 
     draw_border( w_border, BORDER_COLOR, title );
 
-    int width = FULL_SCREEN_WIDTH - 2;
-    int height = b_height - 2;
+    int width = fixed_width - 2;
+    int height = fixed_height - 2;
     const auto vFolded = foldstring( text, width );
     int iLines = vFolded.size();
 
