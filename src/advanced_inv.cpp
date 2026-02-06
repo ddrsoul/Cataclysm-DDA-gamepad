@@ -138,13 +138,13 @@ void temp_hide_advanced_inv()
 }
 
 // *INDENT-OFF*
+// *INDENT-OFF*
 advanced_inventory::advanced_inventory()
     : recalc( true )
     , src( left )
     , dest( right )
       // panes don't need initialization, they are recalculated immediately
     , squares( {
-{
     // Новые координаты (выровненные по левому краю для ширины 37)
     { AIM_INVENTORY, point( 10, 2 ), tripoint::zero,       _( "Inventory" ),          _( "IN" ),  "I", "ITEMS_INVENTORY", AIM_INVENTORY},
     { AIM_SOUTHWEST, point( 13, 3 ), tripoint::south_west, _( "South West" ),         _( "SW" ),  "1", "ITEMS_SW",        AIM_WEST},
@@ -161,7 +161,7 @@ advanced_inventory::advanced_inventory()
     { AIM_CONTAINER, point( 10, 1 ), tripoint::zero,       _( "Container" ),          _( "CN" ),  "C", "ITEMS_CONTAINER", AIM_CONTAINER},
     { AIM_PARENT,    point( 7, 1 ),  tripoint::zero,       "",                        "",         "X", "ITEMS_PARENT",    AIM_PARENT},
     { AIM_WORN,      point( 7, 2 ),  tripoint::zero,       _( "Worn Items" ),         _( "WR" ),  "W", "ITEMS_WORN",      AIM_WORN}
-} )
+    } )
 {
     save_state = &uistate.transfer_save;
 }
