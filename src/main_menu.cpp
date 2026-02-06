@@ -409,12 +409,12 @@ void main_menu::init_windows()
     constexpr int fixed_total_height = 30;   // 480px / 16px
     
     // Позиционирование по левому краю с небольшим отступом
-    constexpr int left_margin = 2;
+    constexpr int left_margin = 0;
     const point p0( left_margin, ( TERMY - fixed_total_height ) / 2 );
 
     w_open = catacurses::newwin( fixed_total_height, fixed_total_width, p0 );
 
-    menu_offset = point( 2, fixed_total_height - 3 ); // Отступ слева 2 символа
+    menu_offset = point( 0, fixed_total_height - 3 ); // Отступ слева 2 символа
     
     LAST_TERM = point( TERMX, TERMY );
 }
