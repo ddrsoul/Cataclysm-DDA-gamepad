@@ -21,6 +21,8 @@ class query_popup_impl : public cataimgui::window
         nc_color default_text_color;
         query_popup *parent;
         short last_keyboard_selected_option;
+        float window_width;  // Добавлено: храним ширину окна
+        float window_height; // Добавлено: храним высоту окна
 
         std::vector<std::vector<std::string>> fold_query(
                                                const std::string &category,
@@ -31,13 +33,15 @@ class query_popup_impl : public cataimgui::window
         short keyboard_selected_option;
 
         explicit query_popup_impl( query_popup *parent ) : cataimgui::window( "QUERY_POPUP",
-                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize ),
+                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize ),
             default_text_color( c_white ) {
             msg_width = 400;
             this->parent = parent;
             keyboard_selected_option = 0;
             last_keyboard_selected_option = -1;
             mouse_selected_option = -1;
+            window_width = 600.0f;  // Фиксированная ширина окна
+            window_height = 480.0f; // Фиксированная высота окна
         }
 
         void on_resized() override;
@@ -48,7 +52,10 @@ class query_popup_impl : public cataimgui::window
     protected:
         void draw_controls() override;
         cataimgui::bounds get_bounds() override {
-            return { -1.f, parent->ontop ? 0 : -1.f, -1.f, -1.f};
+            // Центрируем окно в области 600 пикселей от левого края
+            // Окно шириной window_width будет отцентрировано в диапазоне [0, 600]
+            float x_pos = (600.0f - window_width) / 2.0f;
+            return { x_pos, parent->ontop ? 0 : -1.f, window_width, window_height };
         }
 };
 
@@ -56,6 +63,13 @@ void query_popup_impl::draw_controls()
 {
     ImGui::SetNavCursorVisible( true );
     mouse_selected_option = -1;
+
+    // Центрируем контент внутри окна
+    float content_width = ImGui::GetWindowContentRegionWidth();
+    float text_start_x = (content_width - msg_width) / 2.0f;
+    if (text_start_x > 0) {
+        ImGui::SetCursorPosX(text_start_x);
+    }
 
     for( const std::string &line : parent->folded_msg ) {
         cataimgui::draw_colored_text( line, parent->default_text_color );
@@ -67,7 +81,12 @@ void query_popup_impl::draw_controls()
             if( ind != 0 && current_line == parent->buttons[ind].pos.y ) {
                 ImGui::SameLine();
             }
-            ImGui::SetCursorPosX( float( parent->buttons[ind].pos.x ) );
+            // Центрируем кнопки
+            float button_width = get_text_width( remove_color_tags( parent->buttons[ind].text ) );
+            float button_x = (content_width - button_width) / 2.0f;
+            if (button_x > 0) {
+                ImGui::SetCursorPosX( button_x );
+            }
             ImGui::Button( remove_color_tags( parent->buttons[ind].text ).c_str() );
             if( ImGui::IsItemHovered() ) {
                 mouse_selected_option = ind;
@@ -85,26 +104,27 @@ void query_popup_impl::on_resized()
 {
     size_t frame_padding = size_t( ImGui::GetStyle().FramePadding.x * 2 );
     size_t item_padding = size_t( ImGui::GetStyle().ItemSpacing.x );
-    // constexpr size_t vert_padding = 1;
-    size_t max_line_width = str_width_to_pixels( FULL_SCREEN_WIDTH - 3 );
+    // Максимальная ширина контента внутри окна
+    size_t max_content_width = window_width - frame_padding * 2;
 
     // Fold message text
-    parent->folded_msg = foldstring( parent->text, FULL_SCREEN_WIDTH - 3 );
+    parent->folded_msg = foldstring( parent->text, max_content_width / 8 ); // Приблизительный расчет
 
     // Fold query buttons
     const auto &folded_query = fold_query( parent->category, parent->pref_kbd_mode,
-                                           parent->options, max_line_width,
+                                           parent->options, max_content_width,
                                            frame_padding + item_padding );
 
     // Calculate size of message part
     msg_width = 0;
     for( const auto &line : parent->folded_msg ) {
         msg_width = std::max( msg_width,
-                              get_text_width( remove_color_tags( line ) ) ); //utf8_width( line, true ) );
+                              get_text_width( remove_color_tags( line ) ) );
     }
     auto btn_padding = [&frame_padding, &item_padding]( size_t num_buttons ) {
         return ( frame_padding * ( num_buttons - 1 ) ) + ( item_padding * ( num_buttons - 1 ) );
     };
+    
     // Calculate width with query buttons
     for( const auto &line : folded_query ) {
         if( !line.empty() ) {
@@ -112,11 +132,13 @@ void query_popup_impl::on_resized()
             for( const auto &opt : line ) {
                 button_width += get_text_width( remove_color_tags( opt ) );
             }
-            // extra item padding needed here to account for space left at the beginning of the window by ImGui
-            msg_width = std::max( msg_width, button_width + btn_padding( line.size() ) + item_padding );
+            button_width += btn_padding( line.size() );
+            msg_width = std::max( msg_width, static_cast<size_t>(button_width) );
         }
     }
-    msg_width = std::min( msg_width, max_line_width );
+    
+    // Ограничиваем ширину контента шириной окна
+    msg_width = std::min( msg_width, static_cast<size_t>(max_content_width) );
 
     // Calculate height with query buttons & button positions
     parent->buttons.clear();
@@ -129,10 +151,11 @@ void query_popup_impl::on_resized()
                     button_width += get_text_width( remove_color_tags( opt ) );
                 }
                 button_width += btn_padding( line.size() );
-                // Right align.
-                // TODO: multi-line buttons
-                size_t button_x = button_width > int( msg_width ) ? size_t( 0 ) :
-                                  size_t( msg_width - button_width );
+                // Центрируем кнопки в строке
+                float button_start_x = (max_content_width - button_width) / 2.0f;
+                if (button_start_x < 0) button_start_x = 0;
+                
+                size_t button_x = static_cast<size_t>(button_start_x);
                 for( const auto &opt : line ) {
                     parent->buttons.emplace_back( opt, point( button_x, line_idx ) );
                     button_x += get_text_width( remove_color_tags( opt ) ) + frame_padding + item_padding;
@@ -175,14 +198,12 @@ query_popup &query_popup::option( const std::string &opt,
 
 query_popup &query_popup::allow_anykey( bool allow )
 {
-    // Change does not affect cache, do not invalidate the window
     anykey = allow;
     return *this;
 }
 
 query_popup &query_popup::allow_cancel( bool allow )
 {
-    // Change does not affect cache, do not invalidate the window
     cancel = allow;
     return *this;
 }
@@ -203,7 +224,6 @@ query_popup &query_popup::full_screen( bool full )
 
 query_popup &query_popup::cursor( size_t pos )
 {
-    // Change does not affect cache, do not invalidate window
     cur = pos;
     std::shared_ptr<query_popup_impl> impl = p_impl.lock();
     if( impl ) {
@@ -246,13 +266,11 @@ std::vector<std::vector<std::string>> query_popup_impl::fold_query(
         query_width += this_query_width;
         if( query_width > max_width + horz_padding ) {
             if( query_cnt == 1 ) {
-                // Each line has at least one query, so keep this query in the current line
                 folded_query.back().emplace_back( desc );
                 folded_query.emplace_back();
                 query_cnt = 0;
                 query_width = 0;
             } else {
-                // Wrap this query to the next line
                 folded_query.emplace_back();
                 folded_query.back().emplace_back( desc );
                 query_cnt = 1;
@@ -280,7 +298,6 @@ void query_popup::invalidate_ui() const
 
 query_popup::result query_popup::query_once()
 {
-
     if( !anykey && !cancel && options.empty() ) {
         return { false, "ERROR", {} };
     }
@@ -291,7 +308,6 @@ query_popup::result query_popup::query_once()
 
     std::shared_ptr<query_popup_impl> impl = create_or_get_impl();
 
-    // ImGui doesn't like to show the window on the first drawn frame, so we do this
     ui_manager::redraw();
 
     input_context ctxt( category, pref_kbd_mode );
@@ -303,7 +319,6 @@ query_popup::result query_popup::query_once()
         for( const query_popup::query_option &opt : options ) {
             ctxt.register_action( opt.action );
         }
-        // Mouse movement and button
         ctxt.register_action( "SELECT" );
         ctxt.register_action( "MOUSE_MOVE" );
         ctxt.register_action( "LEFT" );
@@ -311,7 +326,6 @@ query_popup::result query_popup::query_once()
     }
     if( anykey ) {
         ctxt.register_action( "ANY_INPUT" );
-        // Mouse movement, button, and wheel
         ctxt.register_action( "COORDINATE" );
     }
     if( cancel ) {
@@ -319,26 +333,21 @@ query_popup::result query_popup::query_once()
     }
 
     result res;
-    // Assign outside construction of `res` to ensure execution order
     res.wait_input = !anykey;
     do {
         ui_manager::redraw();
         res.action = ctxt.handle_input( 50 );
         res.evt = ctxt.get_raw_input();
 
-        // If we're tracking mouse movement
         if( !options.empty() && res.action == "SELECT" && impl->get_mouse_selected_option() != -1 ) {
-            // Left-click to confirm selection
             res.action = "CONFIRM";
             cur = size_t( impl->get_mouse_selected_option() );
         } else if( res.action == "CONFIRM" && impl->keyboard_selected_option != -1 ) {
             cur = size_t( impl->keyboard_selected_option );
         }
     } while(
-        // Always ignore mouse movement
         ( res.evt.type == input_event_t::mouse &&
           res.evt.get_first_input() == static_cast<int>( MouseInput::Move ) ) ||
-        // Ignore window losing focus in SDL
         ( res.evt.type == input_event_t::keyboard_char && res.evt.sequence.empty() ) ||
         res.evt.type == input_event_t::timeout
     );
@@ -363,12 +372,10 @@ query_popup::result query_popup::query_once()
             impl->keyboard_selected_option = 0;
         }
     } else if( res.action == "HELP_KEYBINDINGS" ) {
-        // Keybindings may have changed, regenerate the UI
         std::shared_ptr<query_popup_impl> impl = p_impl.lock();
         if( impl ) {
             impl->on_resized();
         }
-        //init();
     } else {
         for( size_t ind = 0; ind < options.size(); ++ind ) {
             if( res.action == options[ind].action ) {
@@ -396,6 +403,7 @@ std::shared_ptr<query_popup_impl> query_popup::create_or_get_impl()
     }
     return impl;
 }
+
 query_popup::result query_popup::query()
 {
     std::shared_ptr<query_popup_impl> ui = create_or_get_impl();
