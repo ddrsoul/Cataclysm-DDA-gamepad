@@ -2364,7 +2364,7 @@ void inventory_selector::rearrange_columns( size_t client_width )
 void inventory_selector::prepare_layout( size_t /* client_width */, size_t /* client_height */ )
 {
     // Фиксированные размеры в символах для 640x480 пикселей
-    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_width = 78;    // 640px / 8px = 80 символов, 80 - слишком много для верхнего экрана
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
     // Этот блок добавляет категории и должен идти перед любыми вычислениями ширины
@@ -2432,7 +2432,7 @@ void inventory_selector::prepare_layout()
         std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 
     // Фиксированные размеры в символах для 640x480 пикселей
-    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_width = 78;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
 
     // Подготавливаем макет с фиксированными размерами
@@ -2637,7 +2637,7 @@ std::vector<std::string> inventory_selector::get_stats() const
 void inventory_selector::resize_window( int /* width */, int /* height */ )
 {
     // Фиксированные размеры для инвентаря
-    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_width = 78;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
     // Отступ слева (2 символа от левого края)
@@ -4440,7 +4440,7 @@ void inventory_examiner::draw_item_details( const item_location &sitem )
 void inventory_examiner::force_max_window_size()
 {
     // Фиксированные размеры для окна осмотра
-    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_width = 78;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
     // Располагаем слева (отступ 2 символа)
@@ -4460,7 +4460,7 @@ int inventory_examiner::execute()
 
 ui_examine.on_screen_resize( [&]( ui_adaptor & ui_examine ) {
     // Фиксированные размеры для окна осмотра
-    constexpr int fixed_width = 80;
+    constexpr int fixed_width = 78;
     constexpr int fixed_height = 30;
     
     // Размещаем справа от основного окна инвентаря
@@ -4674,7 +4674,7 @@ void trade_selector::on_toggle()
 void trade_selector::resize( point const & /* size */, point const & /* origin */ )
 {
     // Фиксированные размеры для торговли
-    constexpr int fixed_width = 80;    // 640px / 8px = 80 символов
+    constexpr int fixed_width = 78;    // 640px / 8px = 80 символов
     constexpr int fixed_height = 30;   // 480px / 16px = 30 символов
     
     // Используем фиксированные размеры вместо переданных
